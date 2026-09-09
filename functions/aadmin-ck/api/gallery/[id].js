@@ -6,7 +6,7 @@ export async function onRequestPut({ request, env, params }) {
     if (!env.MEDIA) return json({ error: '圖片儲存空間尚未設定。' }, 503);
     const db = await getDb(env);
     const row = await galleryById(db, params.id);
-    if (!row) return json({ error: '找不到相簿項目。' }, 404);
+    if (!row) return json({ error: '找不到證照／相簿項目。' }, 404);
     const existing = JSON.parse(row.data);
     const form = await request.formData();
     const file = form.get('image');

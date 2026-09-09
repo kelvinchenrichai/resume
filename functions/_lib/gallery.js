@@ -24,7 +24,7 @@ export function galleryItemFromForm(form, existing, objectKey, file) {
   const title = clean(form.get('title'), 180) || titleZh;
   const categoryZh = clean(form.get('categoryZh'), 100) || '證照';
   const category = clean(form.get('category'), 100) || categoryZh;
-  if (!title) throw new Error('請填寫相簿項目標題。');
+  if (!title) throw new Error('請填寫證照／相簿項目標題。');
   return {
     id: existing?.id || `gallery-${crypto.randomUUID()}`,
     title,
@@ -38,6 +38,7 @@ export function galleryItemFromForm(form, existing, objectKey, file) {
     mimeType: file?.type || existing?.mimeType || 'image/jpeg',
     originalName: clean(file?.name || existing?.originalName || 'image', 240),
     isPublic: form.get('isPublic') === 'true',
+    isFeatured: form.get('isFeatured') === 'true',
     displayOrder: Number(form.get('displayOrder')) || 0,
     createdAt: existing?.createdAt || now,
     updatedAt: now,

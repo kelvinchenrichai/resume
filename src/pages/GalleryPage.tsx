@@ -15,14 +15,14 @@ export function GalleryPage() {
 
   return <section className="page page-top gallery-page">
     <div className="title-row">
-      <div><div className="eyebrow">{zh ? '經歷／收藏' : 'MILESTONES / COLLECTION'}</div><h1>{zh ? '相簿與證照' : 'Gallery & credentials'}</h1></div>
-      <p>{zh ? '紀錄證照、獎項、活動與重要里程碑。' : 'Credentials, awards, events and selected milestones.'}</p>
+      <div><div className="eyebrow">{zh ? '經歷／收藏' : 'MILESTONES / COLLECTION'}</div><h1>{zh ? '證照／相簿' : 'Certificates / Gallery'}</h1></div>
+      <p>{zh ? '紀錄證照、獎項、活動與重要里程碑。' : 'Certificates, awards, events and selected milestones.'}</p>
     </div>
     {categories.length > 1 && <div className="gallery-filters">
       <button className={!category ? 'active' : ''} onClick={() => setCategory('')}>{zh ? '全部' : 'All'}</button>
       {categories.map((item) => <button className={category === item ? 'active' : ''} key={item} onClick={() => setCategory(item)}>{item}</button>)}
     </div>}
-    {visible.length === 0 ? <div className="empty"><h2>{zh ? '相簿準備中' : 'Gallery coming soon'}</h2><p>{zh ? '新的證照與紀錄會陸續更新。' : 'New credentials and milestones will appear here.'}</p></div> : <div className="gallery-grid">
+    {visible.length === 0 ? <div className="empty"><h2>{zh ? '證照／相簿準備中' : 'Certificates / Gallery coming soon'}</h2><p>{zh ? '新的證照與紀錄會陸續更新。' : 'New certificates and milestones will appear here.'}</p></div> : <div className="gallery-grid">
       {visible.map((item) => {
         const title = zh ? item.titleZh || item.title : item.title;
         const description = zh ? item.descriptionZh || item.description : item.description;
