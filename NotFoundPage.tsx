@@ -1,0 +1,1 @@
+import { Link } from 'react-router-dom'; import { useLocale } from '../app/LocaleContext'; export function NotFoundPage(){const {t}=useLocale();return <section className="page page-top empty"><div className="eyebrow">404</div><h1>{t('pageMissing')}</h1><Link className="button" to="/">{t('backHome')}</Link></section>}
