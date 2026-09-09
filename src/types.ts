@@ -1,5 +1,5 @@
 export type ProjectStatus = string;
-export interface ProjectItem { id: string; slug?: string; title: string; titleZh?: string; coverImage: string; images?: string[]; shortDescription: string; shortDescriptionZh?: string; detailedDescription: string; detailedDescriptionZh?: string; category: string; categoryZh?: string; tags: string[]; year: number; status: ProjectStatus; statusZh?: string; externalUrl?: string; githubUrl?: string; demoUrl?: string; isFeatured: boolean; isPublic: boolean; displayOrder: number; createdAt: string; updatedAt: string; }
+export interface ProjectItem { id: string; slug?: string; title: string; titleZh?: string; coverImage: string; images?: string[]; shortDescription: string; shortDescriptionZh?: string; detailedDescription: string; detailedDescriptionZh?: string; category: string; categoryZh?: string; tags: string[]; year: number; status: ProjectStatus; statusZh?: string; externalUrl?: string; githubUrl?: string; demoUrl?: string; isFeatured: boolean; featuredOrder?: number; isPublic: boolean; displayOrder: number; createdAt: string; updatedAt: string; }
 export type ViewMode = 'showcase' | 'management' | 'inquiries';
 export type SortField = 'displayOrder' | 'year' | 'title' | 'updatedAt';
 export type SortDirection = 'asc' | 'desc';
