@@ -2,10 +2,12 @@ import { FolderKanban, Images, Inbox, Languages, LayoutDashboard, LogOut, Menu, 
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useLocale } from '../app/LocaleContext';
+import { usePortfolio } from '../app/PortfolioContext';
 
 export function AdminLayout() {
   const [open, setOpen] = useState(false);
   const { locale, t, toggleLocale } = useLocale();
+  const { error } = usePortfolio();
   const items = [
     ['/aadmin-ck', t('overview'), LayoutDashboard],
     ['/aadmin-ck/projects', t('projects'), FolderKanban],
@@ -20,6 +22,6 @@ export function AdminLayout() {
       <button className="admin-language" onClick={toggleLocale}><Languages size={17}/>{locale === 'en' ? '切換中文' : 'Switch to English'}</button>
       <Link className="admin-exit" to="/"><LogOut size={17}/>{t('viewPublic')}</Link>
     </aside>
-    <div className="admin-main"><header><button onClick={() => setOpen(true)}><Menu/></button><span>CK PORTFOLIO CMS</span><span className="local-badge">{locale === 'zh-TW' ? '雲端同步' : 'CLOUD SYNCED'}</span></header><Outlet/></div>
+    <div className="admin-main"><header><button onClick={() => setOpen(true)}><Menu/></button><span>CK PORTFOLIO CMS</span><span className="local-badge">{error ? (locale === 'zh-TW' ? '同步失敗' : 'SYNC ERROR') : (locale === 'zh-TW' ? '雲端同步' : 'CLOUD SYNCED')}</span></header>{error && <div className="sync-error admin-sync-error" role="alert">{locale === 'zh-TW' ? '無法讀取雲端資料，請重新整理後再操作。' : 'Cloud data could not be loaded. Refresh before making changes.'}</div>}<Outlet/></div>
   </div>;
 }

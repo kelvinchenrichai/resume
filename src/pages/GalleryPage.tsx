@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../app/LocaleContext';
 import { usePortfolio } from '../app/PortfolioContext';
 import { GalleryItem } from '../types';
@@ -12,6 +12,7 @@ export function GalleryPage() {
   const [selected, setSelected] = useState<GalleryItem | null>(null);
   const categories = useMemo(() => Array.from(new Set(gallery.map((item) => zh ? item.categoryZh || item.category : item.category))), [gallery, zh]);
   const visible = gallery.filter((item) => !category || (zh ? item.categoryZh || item.category : item.category) === category);
+  useEffect(() => setCategory(''), [locale]);
 
   return <section className="page page-top gallery-page">
     <div className="title-row">

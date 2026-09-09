@@ -2,7 +2,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useLocale } from '../app/LocaleContext';
 import { usePortfolio } from '../app/PortfolioContext';
-import { projectExternalUrl } from '../utils/projectLinks';
+import { projectExternalUrl, safeHttpUrl } from '../utils/projectLinks';
 
 export function ProjectDetailPage() {
   const { slug } = useParams();
@@ -14,6 +14,8 @@ export function ProjectDetailPage() {
 
   const copy = projectText(p);
   const externalUrl = projectExternalUrl(p);
+  const demoUrl = safeHttpUrl(p.demoUrl);
+  const githubUrl = safeHttpUrl(p.githubUrl);
   const savedImages = [p.coverImage, ...(p.images || [])].filter((image, index, all) => Boolean(image) && all.indexOf(image) === index).slice(0, 3);
   const projectImages = savedImages.length ? savedImages : ['/ck-logo.jpg'];
 
@@ -23,7 +25,7 @@ export function ProjectDetailPage() {
     {projectImages.length === 1
       ? <img className="detail-cover" src={projectImages[0]} alt=""/>
       : <div className={`detail-image-gallery image-count-${projectImages.length}`}>{projectImages.map((image, index) => <img key={image} src={image} alt={`${copy.title} ${index + 1}`}/>)}</div>}
-    <div className="detail-grid"><div><div className="eyebrow">{t('caseStudy')}</div><p className="lead preserve">{copy.detailedDescription}</p></div><aside><div className="eyebrow">{t('stack')}</div><div className="tag-row">{p.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="link-stack">{p.demoUrl && <a href={p.demoUrl} target="_blank" rel="noopener noreferrer">{t('liveDemo')} <ExternalLink size={15}/></a>}{p.githubUrl && <a href={p.githubUrl} target="_blank" rel="noopener noreferrer">{t('github')} <ExternalLink size={15}/></a>}{externalUrl && <a href={externalUrl} target="_blank" rel="noopener noreferrer">{t('visitProject')} <ExternalLink size={15}/></a>}</div></aside></div>
+    <div className="detail-grid"><div><div className="eyebrow">{t('caseStudy')}</div><p className="lead preserve">{copy.detailedDescription}</p></div><aside><div className="eyebrow">{t('stack')}</div><div className="tag-row">{p.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="link-stack">{demoUrl && <a href={demoUrl} target="_blank" rel="noopener noreferrer">{t('liveDemo')} <ExternalLink size={15}/></a>}{githubUrl && <a href={githubUrl} target="_blank" rel="noopener noreferrer">{t('github')} <ExternalLink size={15}/></a>}{externalUrl && <a href={externalUrl} target="_blank" rel="noopener noreferrer">{t('visitProject')} <ExternalLink size={15}/></a>}</div></aside></div>
     <div className="detail-cta"><h2>{t('buildSimilar')}</h2><Link className="button light" to={`/contact?sourceProjectId=${encodeURIComponent(p.id)}&sourceProjectTitle=${encodeURIComponent(copy.title)}`}>{t('discussSimilar')}</Link></div>
   </article>;
 }

@@ -29,7 +29,7 @@ const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]
 const isAdmin = () => window.location.pathname.startsWith('/aadmin-ck');
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [inquiries, setInquiries] = useState<InquiryItem[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(DEFAULT_SITE_CONFIG);

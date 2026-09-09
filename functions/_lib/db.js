@@ -19,6 +19,7 @@ export async function getDb(env) {
     db.prepare('CREATE TABLE IF NOT EXISTS inquiries (id TEXT PRIMARY KEY, data TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)'),
     db.prepare('CREATE TABLE IF NOT EXISTS gallery (id TEXT PRIMARY KEY, data TEXT NOT NULL, object_key TEXT NOT NULL UNIQUE, is_public INTEGER NOT NULL DEFAULT 0, display_order INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)'),
     db.prepare('CREATE TABLE IF NOT EXISTS site_config (id INTEGER PRIMARY KEY CHECK (id = 1), data TEXT NOT NULL)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS inquiry_rate_limits (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_public_order ON projects(is_public, display_order)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_inquiries_status_created ON inquiries(status, created_at DESC)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_gallery_public_order ON gallery(is_public, display_order)'),
@@ -30,14 +31,53 @@ export async function getDb(env) {
     statements.push(db.prepare("INSERT INTO portfolio_meta (key, value) VALUES ('seeded', '1')"));
     await db.batch(statements);
   }
+  if (env.MEDIA) await migrateLegacyProjectImages(env, db);
   return db;
+}
+
+const DATA_IMAGE = /^data:(image\/(?:jpeg|png|webp|gif));base64,([a-z0-9+/=\r\n]+)$/i;
+const IMAGE_EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+
+async function moveDataImage(env, value) {
+  const match = typeof value === 'string' ? value.match(DATA_IMAGE) : null;
+  if (!match) return value;
+  const mimeType = match[1].toLowerCase();
+  const binary = atob(match[2].replace(/\s/g, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  const id = `${crypto.randomUUID()}.${IMAGE_EXTENSIONS[mimeType]}`;
+  await env.MEDIA.put(`projects/${id}`, bytes, { httpMetadata: { contentType: mimeType } });
+  return `/api/public/project-media/${id}`;
+}
+
+async function migrateLegacyProjectImages(env, db) {
+  const rows = await db.prepare("SELECT id, data FROM projects WHERE data LIKE '%data:image/%' LIMIT 6").all();
+  for (const row of rows.results) {
+    const item = JSON.parse(row.data);
+    item.coverImage = await moveDataImage(env, item.coverImage);
+    if (Array.isArray(item.images)) item.images = await Promise.all(item.images.slice(0, 2).map((image) => moveDataImage(env, image)));
+    await upsertProject(db, item);
+  }
+}
+
+export async function consumeInquiryQuota(db, request) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+  const clientKey = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  const now = Date.now();
+  const bucket = Math.floor(now / 3600000);
+  await db.prepare('DELETE FROM inquiry_rate_limits WHERE expires_at < ?').bind(now).run();
+  const result = await db.prepare('INSERT INTO inquiry_rate_limits (key, count, expires_at) VALUES (?, 1, ?) ON CONFLICT(key) DO UPDATE SET count = count + 1, expires_at = excluded.expires_at RETURNING count').bind(`${clientKey}:${bucket}`, now + 7200000).first();
+  return Number(result?.count || 1) <= 8;
 }
 
 export async function publicState(db) {
   const projects = await db.prepare('SELECT data FROM projects WHERE is_public = 1 ORDER BY display_order ASC').all();
   const gallery = await db.prepare('SELECT data FROM gallery WHERE is_public = 1 ORDER BY display_order ASC').all();
   const config = await db.prepare('SELECT data FROM site_config WHERE id = 1').first();
-  return { projects: projects.results.map((row) => JSON.parse(row.data)), gallery: gallery.results.map((row) => withGalleryImage(row, false)), siteConfig: JSON.parse(config.data) };
+  const storedConfig = JSON.parse(config.data);
+  const siteConfig = { name: storedConfig.name, tagline: storedConfig.tagline, taglineZh: storedConfig.taglineZh, bio: storedConfig.bio, bioZh: storedConfig.bioZh, email: '', availability: storedConfig.availability, availabilityZh: storedConfig.availabilityZh };
+  return { projects: projects.results.map((row) => JSON.parse(row.data)), gallery: gallery.results.map((row) => withGalleryImage(row, false)), siteConfig };
 }
 
 export async function adminState(db) {
