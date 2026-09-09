@@ -1,0 +1,2 @@
+import { SiteConfig } from '../types';
+export const DEFAULT_SITE_CONFIG: SiteConfig = { name: 'CK', tagline: 'Trading × AI × Systems × Experiments', taglineZh: '交易 × AI × 系統 × 實驗', bio: 'I build tools, systems and experiments around trading, AI and decision-making.', bioZh: '我專注打造與交易、AI 和決策有關的工具、系統與實驗。', email: 'hello@example.com', github: 'https://github.com/', tradingView: 'https://www.tradingview.com/', availability: 'Open to focused collaborations and ambitious prototypes.', availabilityZh: '目前開放目標明確的合作與具企圖心的原型專案。' };
