@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useLocale } from '../app/LocaleContext';
 import { POPULAR_TAGS, PRESET_CATEGORIES } from '../data/initialProjects';
+import { cloudApi } from '../services/cloudApi';
 import { imageService } from '../services/imageService';
 import { ProjectItem } from '../types';
 
@@ -22,6 +23,9 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
   const [customTag, setCustomTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [imageUrls, setImageUrls] = useState([base.coverImage, base.images?.[0] || '', base.images?.[1] || '']);
+  const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
+  const [imagePreviews, setImagePreviews] = useState([base.coverImage, base.images?.[0] || '', base.images?.[1] || '']);
   const [preview, setPreview] = useState({
     title: base.title,
     titleZh: base.titleZh,
@@ -55,6 +59,23 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
     setCustomTag('');
   }
 
+  function updateImageUrl(index: number, value: string) {
+    setImageUrls((current) => current.map((item, position) => position === index ? value : item));
+    if (!imageFiles[index]) setImagePreviews((current) => current.map((item, position) => position === index ? value : item));
+  }
+
+  async function selectImage(index: number, file?: File) {
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setError(zh ? '每張圖片需小於 8 MB。' : 'Each image must be under 8 MB.');
+      return;
+    }
+    setError('');
+    const dataUrl = await imageService.fileToDataUrl(file);
+    setImageFiles((current) => current.map((item, position) => position === index ? file : item));
+    setImagePreviews((current) => current.map((item, position) => position === index ? dataUrl : item));
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -62,10 +83,12 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
     setSaving(true);
     setError('');
     try {
+      const uploaded = await Promise.all(imageFiles.map(async (file) => file ? (await cloudApi.uploadProjectImage(file)).url : null));
+      const resolvedImages = imageUrls.map((url, index) => uploaded[index] || url.trim());
       await onSave({
         ...base,
         title: String(form.get('title')).trim(), titleZh: String(form.get('titleZh')).trim(),
-        slug: String(form.get('slug')).trim() || undefined, coverImage: String(form.get('coverImage')).trim(),
+        slug: String(form.get('slug')).trim() || undefined, coverImage: resolvedImages[0], images: resolvedImages.slice(1).filter(Boolean),
         shortDescription: String(form.get('shortDescription')).trim(), shortDescriptionZh: String(form.get('shortDescriptionZh')).trim(),
         detailedDescription: String(form.get('detailedDescription')).trim(), detailedDescriptionZh: String(form.get('detailedDescriptionZh')).trim(),
         category: String(form.get('category')), categoryZh: String(form.get('categoryZh')).trim(), tags,
@@ -87,14 +110,20 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
       <section className="project-live-preview" aria-live="polite">
         <div className="preview-heading"><span className="eyebrow">{zh ? '即時預覽' : 'LIVE PREVIEW'}</span><small>{zh ? '輸入內容時會同步更新' : 'Updates as you type'}</small></div>
         <div className="preview-project-card">
-          <div className="preview-cover"><img src={preview.coverImage || '/ck-logo.jpg'} alt=""/><span>{previewCategory || (zh ? '未分類' : 'Uncategorized')}</span></div>
+          <div className="preview-cover"><img src={imagePreviews[0] || '/ck-logo.jpg'} alt=""/><span>{previewCategory || (zh ? '未分類' : 'Uncategorized')}</span></div>
           <div className="preview-copy"><div className="eyebrow">{preview.year || new Date().getFullYear()} · {zh ? previewStatus.zh : previewStatus.en}</div><h3>{previewTitle || (zh ? '作品標題預覽' : 'Project title preview')}</h3><p>{previewDescription || (zh ? '簡短介紹會顯示在這裡。' : 'Your short description will appear here.')}</p>{tags.length > 0 && <div className="tag-row">{tags.slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}</div>}</div>
         </div>
+        <div className="preview-photo-strip">{imagePreviews.map((image, index) => <div key={index} className={image ? 'has-image' : ''}>{image ? <img src={image} alt=""/> : <span>{zh ? `圖片 ${index + 1}` : `Photo ${index + 1}`}</span>}</div>)}</div>
       </section>
       <div className="form-two"><label>{zh ? '英文標題' : 'Title (English)'} *<input name="title" required defaultValue={base.title}/></label><label>{zh ? '中文標題（繁中）' : 'Title (Traditional Chinese)'}<input name="titleZh" defaultValue={base.titleZh}/></label></div>
       <label>{zh ? '內部網址代稱（請勿貼完整網址）' : 'Internal slug (not a full URL)'}<input name="slug" defaultValue={base.slug}/></label>
-      <label>{zh ? '封面圖片網址' : 'Cover image URL'}<input id="coverImage" name="coverImage" defaultValue={base.coverImage}/></label>
-      <label className="file-label">{zh ? '或從電腦選擇封面圖片' : 'Or upload a cover image'}<input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 5*1024*1024) { alert(zh ? '圖片需小於 5 MB。' : 'Image must be under 5 MB.'); return; } const dataUrl = await imageService.fileToDataUrl(file); (document.getElementById('coverImage') as HTMLInputElement).value = dataUrl; setPreview((current) => ({ ...current, coverImage: dataUrl })); }}/></label>
+      <div className="project-photo-editor">
+        <div className="photo-editor-heading"><strong>{zh ? '作品照片（最多 3 張）' : 'Project photos (up to 3)'}</strong><small>{zh ? '第 1 張會作為作品列表的封面。每張上限 8 MB。' : 'Photo 1 is used as the project card cover. Maximum 8 MB each.'}</small></div>
+        {imageUrls.map((url, index) => <div className="project-photo-row" key={index}>
+          <label>{zh ? `圖片 ${index + 1}${index === 0 ? '（列表封面）' : ''}網址` : `Photo ${index + 1}${index === 0 ? ' (card cover)' : ''} URL`}<input type="text" inputMode="url" value={url} onChange={(event) => updateImageUrl(index, event.target.value)} placeholder="https://..."/></label>
+          <label className="file-label">{zh ? '或從電腦選擇' : 'Or choose from computer'}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => selectImage(index, event.target.files?.[0])}/></label>
+        </div>)}
+      </div>
       <div className="form-two"><label>{zh ? '英文簡短介紹' : 'Short description (English)'}<textarea name="shortDescription" rows={3} defaultValue={base.shortDescription}/></label><label>{zh ? '中文簡短介紹（繁中）' : 'Short description (Traditional Chinese)'}<textarea name="shortDescriptionZh" rows={3} defaultValue={base.shortDescriptionZh}/></label></div>
       <div className="form-two"><label>{zh ? '英文案例內容' : 'Case study (English)'}<textarea name="detailedDescription" rows={7} defaultValue={base.detailedDescription}/></label><label>{zh ? '中文案例內容（繁中）' : 'Case study (Traditional Chinese)'}<textarea name="detailedDescriptionZh" rows={7} defaultValue={base.detailedDescriptionZh}/></label></div>
       <div className="form-two"><label>{zh ? '英文分類' : 'Category (English)'}<select name="category" defaultValue={base.category}>{PRESET_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></label><label>{zh ? '中文分類（繁中）' : 'Category (Traditional Chinese)'}<input name="categoryZh" defaultValue={base.categoryZh}/></label></div>

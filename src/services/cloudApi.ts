@@ -19,6 +19,11 @@ export const cloudApi = {
   getAdminState: () => request<PortfolioState>('/aadmin-ck/api/state'),
   createInquiry: (item: InquiryItem) => request<{ ok: true }>('/api/public/inquiries', { method: 'POST', body: JSON.stringify(item) }),
   saveProject: (item: ProjectItem, exists: boolean) => request<{ ok: true }>(exists ? `/aadmin-ck/api/projects/${encodeURIComponent(item.id)}` : '/aadmin-ck/api/projects', { method: exists ? 'PUT' : 'POST', body: JSON.stringify(item) }),
+  uploadProjectImage: (file: File) => {
+    const form = new FormData();
+    form.set('image', file);
+    return request<{ ok: true; url: string }>('/aadmin-ck/api/project-media', { method: 'POST', body: form });
+  },
   deleteProject: (id: string) => request<{ ok: true }>(`/aadmin-ck/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   saveInquiry: (item: InquiryItem) => request<{ ok: true }>(`/aadmin-ck/api/inquiries/${encodeURIComponent(item.id)}`, { method: 'PUT', body: JSON.stringify(item) }),
   deleteInquiry: (id: string) => request<{ ok: true }>(`/aadmin-ck/api/inquiries/${encodeURIComponent(id)}`, { method: 'DELETE' }),
