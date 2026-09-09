@@ -2,11 +2,12 @@ import { createContext, ReactNode, useContext, useEffect, useState } from 'react
 import { DEFAULT_SITE_CONFIG } from '../config/siteConfig';
 import { INITIAL_PROJECTS } from '../data/initialProjects';
 import { cloudApi } from '../services/cloudApi';
-import { InquiryItem, ProjectItem, SiteConfig } from '../types';
+import { GalleryItem, InquiryItem, ProjectItem, SiteConfig } from '../types';
 
 type ContextValue = {
   projects: ProjectItem[];
   inquiries: InquiryItem[];
+  gallery: GalleryItem[];
   siteConfig: SiteConfig;
   ready: boolean;
   error: string;
@@ -15,6 +16,8 @@ type ContextValue = {
   duplicateProject(p: ProjectItem): Promise<void>;
   saveInquiry(i: InquiryItem): Promise<void>;
   deleteInquiry(id: string): Promise<void>;
+  saveGallery(item: GalleryItem | null, file: File | null, values: Record<string, string | boolean | number>): Promise<void>;
+  deleteGallery(id: string): Promise<void>;
   saveSiteConfig(c: SiteConfig): Promise<void>;
   importBackup(data: unknown): Promise<void>;
   exportBackup(): void;
@@ -28,6 +31,7 @@ const isAdmin = () => window.location.pathname.startsWith('/aadmin-ck');
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
   const [inquiries, setInquiries] = useState<InquiryItem[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(DEFAULT_SITE_CONFIG);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
@@ -41,11 +45,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           if (!active) return;
           setProjects(state.projects);
           setInquiries(state.inquiries);
+          setGallery(state.gallery);
           setSiteConfig(state.siteConfig);
         } else {
           const state = await cloudApi.getPublicState();
           if (!active) return;
           setProjects(state.projects);
+          setGallery(state.gallery);
           setSiteConfig(state.siteConfig);
         }
         setError('');
@@ -74,12 +80,47 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setInquiries((current) => exists ? current.map((i) => i.id === item.id ? item : i) : [item, ...current]);
   };
   const deleteInquiry = async (id: string) => { await cloudApi.deleteInquiry(id); setInquiries((current) => current.filter((i) => i.id !== id)); };
+  const saveGallery = async (existing: GalleryItem | null, file: File | null, values: Record<string, string | boolean | number>) => {
+    const form = new FormData();
+    Object.entries(values).forEach(([key, value]) => form.set(key, String(value)));
+    if (file) form.set('image', file);
+    const { item } = await cloudApi.saveGallery(form, existing?.id);
+    setGallery((current) => existing ? current.map((entry) => entry.id === item.id ? item : entry) : [item, ...current]);
+  };
+  const deleteGallery = async (id: string) => { await cloudApi.deleteGallery(id); setGallery((current) => current.filter((item) => item.id !== id)); };
   const saveSiteConfig = async (config: SiteConfig) => { await cloudApi.saveSiteConfig(config); setSiteConfig(config); };
-  const exportBackup = () => { const blob = new Blob([JSON.stringify({ version: 3, projects, inquiries, siteConfig }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ck-portfolio-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href); };
-  const importBackup = async (data: unknown) => { if (!data || typeof data !== 'object') throw new Error('Invalid backup file.'); const backup = data as { projects?: ProjectItem[]; inquiries?: InquiryItem[]; siteConfig?: SiteConfig }; if (!Array.isArray(backup.projects)) throw new Error('Backup has no projects array.'); const next = { projects: backup.projects, inquiries: backup.inquiries || [], siteConfig: backup.siteConfig || DEFAULT_SITE_CONFIG }; await cloudApi.importState(next); setProjects(next.projects); setInquiries(next.inquiries); setSiteConfig(next.siteConfig); };
-  const resetDemo = async () => { const next = { projects: INITIAL_PROJECTS, inquiries: [], siteConfig: DEFAULT_SITE_CONFIG }; await cloudApi.importState(next); setProjects(next.projects); setInquiries([]); setSiteConfig(next.siteConfig); };
+  const exportBackup = () => {
+    const blob = new Blob([JSON.stringify({ version: 4, projects, inquiries, gallery, siteConfig }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ck-portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  const importBackup = async (data: unknown) => {
+    if (!data || typeof data !== 'object') throw new Error('Invalid backup file.');
+    const backup = data as { projects?: ProjectItem[]; inquiries?: InquiryItem[]; gallery?: GalleryItem[]; siteConfig?: SiteConfig };
+    if (!Array.isArray(backup.projects)) throw new Error('Backup has no projects array.');
+    const next = { projects: backup.projects, inquiries: backup.inquiries || [], gallery: backup.gallery, siteConfig: backup.siteConfig || DEFAULT_SITE_CONFIG };
+    await cloudApi.importState(next);
+    setProjects(next.projects);
+    setInquiries(next.inquiries);
+    if (next.gallery) setGallery(next.gallery);
+    setSiteConfig(next.siteConfig);
+  };
+  const resetDemo = async () => {
+    const next = { projects: INITIAL_PROJECTS, inquiries: [], siteConfig: DEFAULT_SITE_CONFIG };
+    await cloudApi.importState(next);
+    setProjects(next.projects);
+    setInquiries([]);
+    setSiteConfig(next.siteConfig);
+  };
 
-  return <Context.Provider value={{ projects, inquiries, siteConfig, ready, error, saveProject, deleteProject, duplicateProject, saveInquiry, deleteInquiry, saveSiteConfig, importBackup, exportBackup, resetDemo }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ projects, inquiries, gallery, siteConfig, ready, error, saveProject, deleteProject, duplicateProject, saveInquiry, deleteInquiry, saveGallery, deleteGallery, saveSiteConfig, importBackup, exportBackup, resetDemo }}>{children}</Context.Provider>;
 }
 
-export function usePortfolio() { const value = useContext(Context); if (!value) throw new Error('usePortfolio must be inside PortfolioProvider'); return value; }
+export function usePortfolio() {
+  const value = useContext(Context);
+  if (!value) throw new Error('usePortfolio must be inside PortfolioProvider');
+  return value;
+}

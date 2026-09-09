@@ -1,2 +1,25 @@
-import { FolderKanban,Inbox,Languages,LayoutDashboard,LogOut,Menu,Settings,X } from 'lucide-react'; import { useState } from 'react'; import { Link,NavLink,Outlet } from 'react-router-dom'; import { useLocale } from '../app/LocaleContext';
-export function AdminLayout(){const [open,setOpen]=useState(false);const {locale,t,toggleLocale}=useLocale();const items=[['/aadmin-ck',t('overview'),LayoutDashboard],['/aadmin-ck/projects',t('projects'),FolderKanban],['/aadmin-ck/inquiries',t('inquiries'),Inbox],['/aadmin-ck/settings',t('settings'),Settings]] as const;return <div className="admin-shell"><aside className={open?'open':''}><div className="admin-brand"><Link to="/aadmin-ck">CK <span>ADMIN</span></Link><button onClick={()=>setOpen(false)}><X/></button></div><nav>{items.map(([to,label,Icon])=><NavLink key={to} end={to==='/aadmin-ck'} to={to} onClick={()=>setOpen(false)}><Icon size={18}/>{label}</NavLink>)}</nav><button className="admin-language" onClick={toggleLocale}><Languages size={17}/>{locale==='en'?'切換中文':'Switch to English'}</button><Link className="admin-exit" to="/"><LogOut size={17}/>{t('viewPublic')}</Link></aside><div className="admin-main"><header><button onClick={()=>setOpen(true)}><Menu/></button><span>CK PORTFOLIO CMS</span><span className="local-badge">{locale==='zh-TW'?'雲端同步':'CLOUD SYNCED'}</span></header><Outlet/></div></div>}
+import { FolderKanban, Images, Inbox, Languages, LayoutDashboard, LogOut, Menu, Settings, X } from 'lucide-react';
+import { useState } from 'react';
+import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useLocale } from '../app/LocaleContext';
+
+export function AdminLayout() {
+  const [open, setOpen] = useState(false);
+  const { locale, t, toggleLocale } = useLocale();
+  const items = [
+    ['/aadmin-ck', t('overview'), LayoutDashboard],
+    ['/aadmin-ck/projects', t('projects'), FolderKanban],
+    ['/aadmin-ck/gallery', t('gallery'), Images],
+    ['/aadmin-ck/inquiries', t('inquiries'), Inbox],
+    ['/aadmin-ck/settings', t('settings'), Settings],
+  ] as const;
+  return <div className="admin-shell">
+    <aside className={open ? 'open' : ''}>
+      <div className="admin-brand"><Link to="/aadmin-ck">CK <span>ADMIN</span></Link><button onClick={() => setOpen(false)}><X/></button></div>
+      <nav>{items.map(([to, label, Icon]) => <NavLink key={to} end={to === '/aadmin-ck'} to={to} onClick={() => setOpen(false)}><Icon size={18}/>{label}</NavLink>)}</nav>
+      <button className="admin-language" onClick={toggleLocale}><Languages size={17}/>{locale === 'en' ? '切換中文' : 'Switch to English'}</button>
+      <Link className="admin-exit" to="/"><LogOut size={17}/>{t('viewPublic')}</Link>
+    </aside>
+    <div className="admin-main"><header><button onClick={() => setOpen(true)}><Menu/></button><span>CK PORTFOLIO CMS</span><span className="local-badge">{locale === 'zh-TW' ? '雲端同步' : 'CLOUD SYNCED'}</span></header><Outlet/></div>
+  </div>;
+}

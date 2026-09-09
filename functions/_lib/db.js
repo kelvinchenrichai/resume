@@ -17,9 +17,11 @@ export async function getDb(env) {
     db.prepare('CREATE TABLE IF NOT EXISTS portfolio_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)'),
     db.prepare('CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL, is_public INTEGER NOT NULL DEFAULT 0, display_order INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)'),
     db.prepare('CREATE TABLE IF NOT EXISTS inquiries (id TEXT PRIMARY KEY, data TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS gallery (id TEXT PRIMARY KEY, data TEXT NOT NULL, object_key TEXT NOT NULL UNIQUE, is_public INTEGER NOT NULL DEFAULT 0, display_order INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL)'),
     db.prepare('CREATE TABLE IF NOT EXISTS site_config (id INTEGER PRIMARY KEY CHECK (id = 1), data TEXT NOT NULL)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_projects_public_order ON projects(is_public, display_order)'),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_inquiries_status_created ON inquiries(status, created_at DESC)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_gallery_public_order ON gallery(is_public, display_order)'),
   ]);
   const seeded = await db.prepare("SELECT value FROM portfolio_meta WHERE key = 'seeded'").first();
   if (!seeded) {
@@ -33,15 +35,22 @@ export async function getDb(env) {
 
 export async function publicState(db) {
   const projects = await db.prepare('SELECT data FROM projects WHERE is_public = 1 ORDER BY display_order ASC').all();
+  const gallery = await db.prepare('SELECT data FROM gallery WHERE is_public = 1 ORDER BY display_order ASC').all();
   const config = await db.prepare('SELECT data FROM site_config WHERE id = 1').first();
-  return { projects: projects.results.map((row) => JSON.parse(row.data)), siteConfig: JSON.parse(config.data) };
+  return { projects: projects.results.map((row) => JSON.parse(row.data)), gallery: gallery.results.map((row) => withGalleryImage(row, false)), siteConfig: JSON.parse(config.data) };
 }
 
 export async function adminState(db) {
   const projects = await db.prepare('SELECT data FROM projects ORDER BY display_order ASC').all();
   const inquiries = await db.prepare('SELECT data FROM inquiries ORDER BY created_at DESC').all();
+  const gallery = await db.prepare('SELECT data FROM gallery ORDER BY display_order ASC').all();
   const config = await db.prepare('SELECT data FROM site_config WHERE id = 1').first();
-  return { projects: projects.results.map((row) => JSON.parse(row.data)), inquiries: inquiries.results.map((row) => JSON.parse(row.data)), siteConfig: JSON.parse(config.data) };
+  return { projects: projects.results.map((row) => JSON.parse(row.data)), inquiries: inquiries.results.map((row) => JSON.parse(row.data)), gallery: gallery.results.map((row) => withGalleryImage(row, true)), siteConfig: JSON.parse(config.data) };
+}
+
+function withGalleryImage(row, admin) {
+  const item = JSON.parse(row.data);
+  return { ...item, imageUrl: `${admin ? '/aadmin-ck/api/media' : '/api/public/media'}/${encodeURIComponent(item.id)}` };
 }
 
 export async function upsertProject(db, item) {
@@ -50,4 +59,14 @@ export async function upsertProject(db, item) {
 
 export async function upsertInquiry(db, item) {
   await db.prepare('INSERT INTO inquiries (id, data, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data, status = excluded.status, updated_at = excluded.updated_at').bind(item.id, JSON.stringify(item), item.status, item.createdAt, item.updatedAt).run();
+}
+
+export async function upsertGallery(db, item) {
+  const stored = { ...item };
+  delete stored.imageUrl;
+  await db.prepare('INSERT INTO gallery (id, data, object_key, is_public, display_order, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data, object_key = excluded.object_key, is_public = excluded.is_public, display_order = excluded.display_order, updated_at = excluded.updated_at').bind(item.id, JSON.stringify(stored), item.objectKey, item.isPublic ? 1 : 0, Number(item.displayOrder) || 0, item.updatedAt || new Date().toISOString()).run();
+}
+
+export async function galleryById(db, id, publicOnly = false) {
+  return db.prepare(`SELECT data, object_key FROM gallery WHERE id = ?${publicOnly ? ' AND is_public = 1' : ''}`).bind(id).first();
 }

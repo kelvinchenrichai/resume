@@ -1,4 +1,4 @@
-import { getDb, json, upsertInquiry, upsertProject } from '../../_lib/db.js';
+import { getDb, json, upsertGallery, upsertInquiry, upsertProject } from '../../_lib/db.js';
 
 export async function onRequestPut({ request, env }) {
   try {
@@ -8,6 +8,7 @@ export async function onRequestPut({ request, env }) {
     await db.batch([db.prepare('DELETE FROM projects'), db.prepare('DELETE FROM inquiries')]);
     for (const project of state.projects) await upsertProject(db, project);
     for (const inquiry of state.inquiries) await upsertInquiry(db, inquiry);
+    if (Array.isArray(state.gallery)) for (const item of state.gallery) await upsertGallery(db, item);
     await db.prepare('INSERT INTO site_config (id, data) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data').bind(JSON.stringify(state.siteConfig)).run();
     return json({ ok: true });
   } catch (error) { return json({ error: error.message }, 500); }
