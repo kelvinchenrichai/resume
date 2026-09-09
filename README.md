@@ -27,7 +27,7 @@ No API key or backend is required.
 ## Routes
 
 - `/`, `/projects`, `/projects/:slug`, `/contact`
-- `/admin`, `/admin/projects`, `/admin/inquiries`, `/admin/settings`
+- `/aadmin-ck`, `/aadmin-ck/projects`, `/aadmin-ck/inquiries`, `/aadmin-ck/settings`
 
 ## Local Storage Demo Mode
 
