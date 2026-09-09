@@ -22,6 +22,28 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
   const [customTag, setCustomTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState({
+    title: base.title,
+    titleZh: base.titleZh,
+    coverImage: base.coverImage,
+    shortDescription: base.shortDescription,
+    shortDescriptionZh: base.shortDescriptionZh,
+    category: base.category,
+    categoryZh: base.categoryZh,
+    status: base.status,
+    year: String(base.year),
+  });
+
+  const previewStatus = STATUS_OPTIONS.find((item) => item.en === preview.status) || STATUS_OPTIONS[0];
+  const previewTitle = zh ? preview.titleZh || preview.title : preview.title || preview.titleZh;
+  const previewDescription = zh ? preview.shortDescriptionZh || preview.shortDescription : preview.shortDescription || preview.shortDescriptionZh;
+  const previewCategory = zh ? preview.categoryZh || preview.category : preview.category || preview.categoryZh;
+
+  function syncPreview(event: FormEvent<HTMLFormElement>) {
+    const target = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    if (!target.name || !(target.name in preview)) return;
+    setPreview((current) => ({ ...current, [target.name]: target.value }));
+  }
 
   function toggleTag(tag: string) {
     setTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]);
@@ -60,12 +82,19 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
 
   return <div className="modal-backdrop"><div className="modal">
     <div className="modal-head"><div><div className="eyebrow">{project ? (zh ? '編輯作品' : 'EDIT PROJECT') : (zh ? '新增作品' : 'NEW PROJECT')}</div><h2>{zh ? project?.titleZh || project?.title || '新增作品集項目' : project?.title || 'Add a portfolio project'}</h2></div><button onClick={onClose}><X/></button></div>
-    <form onSubmit={submit} className="editor-form">
+    <form onSubmit={submit} onInput={syncPreview} className="editor-form">
       <div className="bilingual-note">{zh ? '中文內容會優先顯示；英文欄位可供英文版網站使用。' : 'Maintain both English and Traditional Chinese copy. English is used as the fallback.'}</div>
+      <section className="project-live-preview" aria-live="polite">
+        <div className="preview-heading"><span className="eyebrow">{zh ? '即時預覽' : 'LIVE PREVIEW'}</span><small>{zh ? '輸入內容時會同步更新' : 'Updates as you type'}</small></div>
+        <div className="preview-project-card">
+          <div className="preview-cover"><img src={preview.coverImage || '/ck-logo.jpg'} alt=""/><span>{previewCategory || (zh ? '未分類' : 'Uncategorized')}</span></div>
+          <div className="preview-copy"><div className="eyebrow">{preview.year || new Date().getFullYear()} · {zh ? previewStatus.zh : previewStatus.en}</div><h3>{previewTitle || (zh ? '作品標題預覽' : 'Project title preview')}</h3><p>{previewDescription || (zh ? '簡短介紹會顯示在這裡。' : 'Your short description will appear here.')}</p>{tags.length > 0 && <div className="tag-row">{tags.slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}</div>}</div>
+        </div>
+      </section>
       <div className="form-two"><label>{zh ? '英文標題' : 'Title (English)'} *<input name="title" required defaultValue={base.title}/></label><label>{zh ? '中文標題（繁中）' : 'Title (Traditional Chinese)'}<input name="titleZh" defaultValue={base.titleZh}/></label></div>
       <label>{zh ? '網址代稱（Slug）' : 'Slug'}<input name="slug" defaultValue={base.slug}/></label>
       <label>{zh ? '封面圖片網址' : 'Cover image URL'}<input id="coverImage" name="coverImage" defaultValue={base.coverImage}/></label>
-      <label className="file-label">{zh ? '或從電腦選擇封面圖片' : 'Or upload a cover image'}<input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 5*1024*1024) { alert(zh ? '圖片需小於 5 MB。' : 'Image must be under 5 MB.'); return; } (document.getElementById('coverImage') as HTMLInputElement).value = await imageService.fileToDataUrl(file); }}/></label>
+      <label className="file-label">{zh ? '或從電腦選擇封面圖片' : 'Or upload a cover image'}<input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 5*1024*1024) { alert(zh ? '圖片需小於 5 MB。' : 'Image must be under 5 MB.'); return; } const dataUrl = await imageService.fileToDataUrl(file); (document.getElementById('coverImage') as HTMLInputElement).value = dataUrl; setPreview((current) => ({ ...current, coverImage: dataUrl })); }}/></label>
       <div className="form-two"><label>{zh ? '英文簡短介紹' : 'Short description (English)'}<textarea name="shortDescription" rows={3} defaultValue={base.shortDescription}/></label><label>{zh ? '中文簡短介紹（繁中）' : 'Short description (Traditional Chinese)'}<textarea name="shortDescriptionZh" rows={3} defaultValue={base.shortDescriptionZh}/></label></div>
       <div className="form-two"><label>{zh ? '英文案例內容' : 'Case study (English)'}<textarea name="detailedDescription" rows={7} defaultValue={base.detailedDescription}/></label><label>{zh ? '中文案例內容（繁中）' : 'Case study (Traditional Chinese)'}<textarea name="detailedDescriptionZh" rows={7} defaultValue={base.detailedDescriptionZh}/></label></div>
       <div className="form-two"><label>{zh ? '英文分類' : 'Category (English)'}<select name="category" defaultValue={base.category}>{PRESET_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></label><label>{zh ? '中文分類（繁中）' : 'Category (Traditional Chinese)'}<input name="categoryZh" defaultValue={base.categoryZh}/></label></div>

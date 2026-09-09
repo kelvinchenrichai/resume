@@ -15,7 +15,7 @@ export function AdminLayout() {
   ] as const;
   return <div className="admin-shell">
     <aside className={open ? 'open' : ''}>
-      <div className="admin-brand"><Link to="/aadmin-ck">CK <span>ADMIN</span></Link><button onClick={() => setOpen(false)}><X/></button></div>
+      <div className="admin-brand"><Link to="/aadmin-ck"><img src="/ck-logo.jpg" alt="CK"/><span>ADMIN</span></Link><button onClick={() => setOpen(false)}><X/></button></div>
       <nav>{items.map(([to, label, Icon]) => <NavLink key={to} end={to === '/aadmin-ck'} to={to} onClick={() => setOpen(false)}><Icon size={18}/>{label}</NavLink>)}</nav>
       <button className="admin-language" onClick={toggleLocale}><Languages size={17}/>{locale === 'en' ? '切換中文' : 'Switch to English'}</button>
       <Link className="admin-exit" to="/"><LogOut size={17}/>{t('viewPublic')}</Link>
