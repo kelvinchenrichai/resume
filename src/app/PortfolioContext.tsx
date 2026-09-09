@@ -67,7 +67,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const saveProject = async (item: ProjectItem) => {
-    const next = { ...item, slug: item.slug || slugify(item.title), updatedAt: new Date().toISOString() };
+    const enteredSlug = item.slug?.trim();
+    const pastedExternalUrl = /^https?:\/\//i.test(enteredSlug || '') ? enteredSlug : undefined;
+    const next = { ...item, slug: pastedExternalUrl ? (slugify(item.title) || item.id) : (enteredSlug || slugify(item.title) || item.id), externalUrl: item.externalUrl || pastedExternalUrl, updatedAt: new Date().toISOString() };
     const exists = projects.some((p) => p.id === next.id);
     await cloudApi.saveProject(next, exists);
     setProjects((current) => exists ? current.map((p) => p.id === next.id ? next : p) : [next, ...current]);

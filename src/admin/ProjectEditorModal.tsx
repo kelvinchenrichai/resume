@@ -92,7 +92,7 @@ export function ProjectEditorModal({ project, maxOrder, onSave, onClose }: { pro
         </div>
       </section>
       <div className="form-two"><label>{zh ? '英文標題' : 'Title (English)'} *<input name="title" required defaultValue={base.title}/></label><label>{zh ? '中文標題（繁中）' : 'Title (Traditional Chinese)'}<input name="titleZh" defaultValue={base.titleZh}/></label></div>
-      <label>{zh ? '網址代稱（Slug）' : 'Slug'}<input name="slug" defaultValue={base.slug}/></label>
+      <label>{zh ? '內部網址代稱（請勿貼完整網址）' : 'Internal slug (not a full URL)'}<input name="slug" defaultValue={base.slug}/></label>
       <label>{zh ? '封面圖片網址' : 'Cover image URL'}<input id="coverImage" name="coverImage" defaultValue={base.coverImage}/></label>
       <label className="file-label">{zh ? '或從電腦選擇封面圖片' : 'Or upload a cover image'}<input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 5*1024*1024) { alert(zh ? '圖片需小於 5 MB。' : 'Image must be under 5 MB.'); return; } const dataUrl = await imageService.fileToDataUrl(file); (document.getElementById('coverImage') as HTMLInputElement).value = dataUrl; setPreview((current) => ({ ...current, coverImage: dataUrl })); }}/></label>
       <div className="form-two"><label>{zh ? '英文簡短介紹' : 'Short description (English)'}<textarea name="shortDescription" rows={3} defaultValue={base.shortDescription}/></label><label>{zh ? '中文簡短介紹（繁中）' : 'Short description (Traditional Chinese)'}<textarea name="shortDescriptionZh" rows={3} defaultValue={base.shortDescriptionZh}/></label></div>
