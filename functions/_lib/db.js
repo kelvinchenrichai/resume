@@ -2,7 +2,22 @@ const DEFAULT_CONFIG = {
   name: 'CK', tagline: 'Trading × AI ×\nSystems × Experiments', taglineZh: '交易 × AI ×\n系統 × 實驗',
   bio: 'I build tools, systems and experiments around trading, AI and decision-making.', bioZh: '我專注打造與交易、AI 和決策有關的工具、系統與實驗。',
   email: 'hello@example.com', github: 'https://github.com/', tradingView: 'https://www.tradingview.com/',
+  contactLinks: [
+    { id: 'github', label: 'GitHub', labelZh: 'GitHub', url: 'https://github.com/' },
+    { id: 'tradingview', label: 'TradingView', labelZh: 'TradingView', url: 'https://www.tradingview.com/' },
+  ],
   availability: 'Open to focused collaborations and ambitious prototypes.', availabilityZh: '目前開放目標明確的合作與具企圖心的原型專案。',
+  contactEyebrow: "LET'S TALK", contactEyebrowZh: '聊聊你的想法', contactTitle: 'Have a project, problem or idea?', contactTitleZh: '有專案、問題或想法嗎？',
+  contactBody: "If you have a project, collaboration, TradingView indicator, AI tool, automation, website or another idea, leave the context here. I'll review it and suggest a practical way forward.", contactBodyZh: '如果你有專案、合作、TradingView 指標、AI 工具、自動化、網站或其他想法，歡迎留下需求。我會閱讀內容，並提出實際可行的合作方式。',
+  projectTypeOptions: [
+    { id: 'indicator', label: 'TradingView / Pine Script Indicator', labelZh: 'TradingView／Pine Script 指標' }, { id: 'quant', label: 'Trading / Quant Tool', labelZh: '交易／量化工具' }, { id: 'ai', label: 'AI / Agent / Automation', labelZh: 'AI／Agent／自動化' }, { id: 'website', label: 'Website / Web App', labelZh: '網站／Web App' }, { id: 'dashboard', label: 'Dashboard / Data Tool', labelZh: '儀表板／資料工具' }, { id: 'prototype', label: 'Prototype / MVP', labelZh: 'Prototype／MVP' }, { id: 'collaboration', label: 'Collaboration', labelZh: '合作' }, { id: 'other', label: 'Other', labelZh: '其他' },
+  ],
+  budgetOptions: [
+    { id: 'under-10k', label: 'Under NT$10,000', labelZh: 'NT$10,000 以下' }, { id: '10k-30k', label: 'NT$10,000 – 30,000', labelZh: 'NT$10,000－30,000' }, { id: '30k-60k', label: 'NT$30,000 – 60,000', labelZh: 'NT$30,000－60,000' }, { id: '60k-100k', label: 'NT$60,000 – 100,000', labelZh: 'NT$60,000－100,000' }, { id: 'over-100k', label: 'NT$100,000+', labelZh: 'NT$100,000 以上' }, { id: 'discuss', label: "Let's discuss", labelZh: '再討論' },
+  ],
+  timelineOptions: [
+    { id: 'asap', label: 'ASAP', labelZh: '儘快' }, { id: 'month', label: 'Within 1 month', labelZh: '一個月內' }, { id: '1-3-months', label: '1–3 months', labelZh: '一至三個月' }, { id: '3-plus-months', label: '3+ months', labelZh: '三個月以上' }, { id: 'flexible', label: 'Flexible', labelZh: '時間彈性' },
+  ],
   showHeader: true, showHero: true, showAbout: true, showFinalCta: true,
   navHome: 'Home', navHomeZh: '首頁', navProjects: 'Projects', navProjectsZh: '作品',
   navGallery: 'Certificates / Gallery', navGalleryZh: '證照／相簿', navContact: 'Contact', navContactZh: '聯絡', navCta: 'Work With Me', navCtaZh: '與我合作',
@@ -91,14 +106,20 @@ export async function publicState(db) {
   const config = await db.prepare('SELECT data FROM site_config WHERE id = 1').first();
   const storedConfig = JSON.parse(config.data);
   const publicConfigKeys = [
-    'name', 'tagline', 'taglineZh', 'bio', 'bioZh', 'availability', 'availabilityZh',
+    'name', 'tagline', 'taglineZh', 'bio', 'bioZh', 'availability', 'availabilityZh', 'contactLinks',
+    'contactEyebrow', 'contactEyebrowZh', 'contactTitle', 'contactTitleZh', 'contactBody', 'contactBodyZh',
+    'projectTypeOptions', 'budgetOptions', 'timelineOptions',
     'showHeader', 'showHero', 'showAbout', 'showFinalCta',
     'navHome', 'navHomeZh', 'navProjects', 'navProjectsZh', 'navGallery', 'navGalleryZh', 'navContact', 'navContactZh', 'navCta', 'navCtaZh',
     'heroEyebrow', 'heroEyebrowZh', 'heroPrimaryLabel', 'heroPrimaryLabelZh', 'heroSecondaryLabel', 'heroSecondaryLabelZh',
     'aboutEyebrow', 'aboutEyebrowZh', 'aboutTitle', 'aboutTitleZh', 'aboutBody', 'aboutBodyZh', 'aboutTags', 'aboutTagsZh',
     'ctaEyebrow', 'ctaEyebrowZh', 'ctaTitle', 'ctaTitleZh', 'ctaBody', 'ctaBodyZh', 'ctaButtonLabel', 'ctaButtonLabelZh',
   ];
-  const siteConfig = { ...Object.fromEntries(publicConfigKeys.map((key) => [key, storedConfig[key] ?? DEFAULT_CONFIG[key]])), email: '' };
+  const legacyLinks = [
+    ['github', 'GitHub', storedConfig.github], ['tradingview', 'TradingView', storedConfig.tradingView], ['linkedin', 'LinkedIn', storedConfig.linkedIn],
+    ['discord', 'Discord', storedConfig.discord], ['instagram', 'Instagram', storedConfig.instagram], ['x', 'X', storedConfig.x],
+  ].filter((item) => item[2]).map(([id, label, url]) => ({ id, label, labelZh: label, url }));
+  const siteConfig = { ...Object.fromEntries(publicConfigKeys.map((key) => [key, storedConfig[key] ?? DEFAULT_CONFIG[key]])), contactLinks: Array.isArray(storedConfig.contactLinks) ? storedConfig.contactLinks : legacyLinks, email: '' };
   return { projects: projects.results.map((row) => JSON.parse(row.data)), gallery: gallery.results.map((row) => withGalleryImage(row, false)), siteConfig };
 }
 
