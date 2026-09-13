@@ -1,4 +1,4 @@
-import { FolderKanban, Images, Inbox, Languages, LayoutDashboard, LogOut, Menu, Settings, X } from 'lucide-react';
+import { FolderKanban, Images, Inbox, Languages, LayoutDashboard, ListOrdered, LogOut, Menu, Settings, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useLocale } from '../app/LocaleContext';
@@ -11,6 +11,7 @@ export function AdminLayout() {
   const items = [
     ['/aadmin-ck', t('overview'), LayoutDashboard],
     ['/aadmin-ck/projects', t('projects'), FolderKanban],
+    ['/aadmin-ck/featured', locale === 'zh-TW' ? '首頁排序' : 'Homepage order', ListOrdered],
     ['/aadmin-ck/gallery', t('gallery'), Images],
     ['/aadmin-ck/inquiries', t('inquiries'), Inbox],
     ['/aadmin-ck/settings', t('settings'), Settings],
