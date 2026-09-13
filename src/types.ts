@@ -5,6 +5,8 @@ export type SortField = 'displayOrder' | 'year' | 'title' | 'updatedAt';
 export type SortDirection = 'asc' | 'desc';
 export type InquiryStatus = 'NEW' | 'CONTACTED' | 'QUOTED' | 'ACCEPTED' | 'CLOSED' | 'ARCHIVED';
 export interface InquiryItem { id: string; date: string; clientName: string; clientEmail?: string; clientPhone?: string; projectName: string; projectType?: string; budgetRange: string; desiredTimeline?: string; referenceUrl?: string; sourceProjectId?: string; sourceProjectTitle?: string; status: InquiryStatus; requirements: string; contactMethod?: string; internalNotes?: string; additionalNotes?: string; createdAt: string; updatedAt: string; }
+export interface ContactLink { id: string; label: string; labelZh?: string; url: string; }
+export interface InquiryOption { id: string; label: string; labelZh?: string; }
 export interface SiteConfig {
   name: string;
   tagline: string;
@@ -18,8 +20,18 @@ export interface SiteConfig {
   discord?: string;
   instagram?: string;
   x?: string;
+  contactLinks?: ContactLink[];
   availability: string;
   availabilityZh?: string;
+  contactEyebrow?: string;
+  contactEyebrowZh?: string;
+  contactTitle?: string;
+  contactTitleZh?: string;
+  contactBody?: string;
+  contactBodyZh?: string;
+  projectTypeOptions?: InquiryOption[];
+  budgetOptions?: InquiryOption[];
+  timelineOptions?: InquiryOption[];
   showHeader?: boolean;
   showHero?: boolean;
   showAbout?: boolean;
