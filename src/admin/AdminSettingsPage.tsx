@@ -1,7 +1,21 @@
-import { ChangeEvent, FormEvent, useRef, useState } from 'react';
-import { Download, RotateCcw, Upload } from 'lucide-react';
+import { ChangeEvent, Dispatch, FormEvent, SetStateAction, useEffect, useRef, useState } from 'react';
+import { Download, Plus, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { useLocale } from '../app/LocaleContext';
 import { usePortfolio } from '../app/PortfolioContext';
+import { InquiryOption } from '../types';
+
+function OptionEditor({ title, options, setOptions, zh }: { title: string; options: InquiryOption[]; setOptions: Dispatch<SetStateAction<InquiryOption[]>>; zh: boolean }) {
+  const update = (id: string, field: 'label' | 'labelZh', value: string) => setOptions((current) => current.map((item) => item.id === id ? { ...item, [field]: value } : item));
+  return <div className="option-editor">
+    <div className="contact-links-heading"><b>{title}</b><button type="button" className="button secondary small" onClick={() => setOptions((current) => [...current, { id: `option-${Date.now()}-${current.length}`, label: '', labelZh: '' }])}><Plus size={15}/>{zh ? '新增' : 'Add'}</button></div>
+    {options.length === 0 && <p className="empty-links">{zh ? '目前沒有選項。' : 'No options yet.'}</p>}
+    {options.map((item, index) => <div className="option-row" key={item.id}>
+      <label>{zh ? '英文內容' : 'English'}<input value={item.label} onChange={(e) => update(item.id, 'label', e.target.value)}/></label>
+      <label>{zh ? '中文內容' : 'Chinese'}<input value={item.labelZh || ''} onChange={(e) => update(item.id, 'labelZh', e.target.value)}/></label>
+      <button type="button" className="icon-button danger-outline" onClick={() => setOptions((current) => current.filter((option) => option.id !== item.id))} aria-label={`${zh ? '刪除' : 'Remove'} ${item.label || index + 1}`}><Trash2 size={17}/></button>
+    </div>)}
+  </div>;
+}
 
 export function AdminSettingsPage() {
   const { siteConfig, saveSiteConfig, exportBackup, importBackup, resetDemo } = usePortfolio();
@@ -9,7 +23,17 @@ export function AdminSettingsPage() {
   const zh = locale === 'zh-TW';
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [contactLinks, setContactLinks] = useState(siteConfig.contactLinks || []);
+  const [projectTypeOptions, setProjectTypeOptions] = useState(siteConfig.projectTypeOptions || []);
+  const [budgetOptions, setBudgetOptions] = useState(siteConfig.budgetOptions || []);
+  const [timelineOptions, setTimelineOptions] = useState(siteConfig.timelineOptions || []);
   const file = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setContactLinks(siteConfig.contactLinks || []); }, [siteConfig.contactLinks]);
+  useEffect(() => { setProjectTypeOptions(siteConfig.projectTypeOptions || []); }, [siteConfig.projectTypeOptions]);
+  useEffect(() => { setBudgetOptions(siteConfig.budgetOptions || []); }, [siteConfig.budgetOptions]);
+  useEffect(() => { setTimelineOptions(siteConfig.timelineOptions || []); }, [siteConfig.timelineOptions]);
+  const updateContactLink = (id: string, field: 'label' | 'labelZh' | 'url', nextValue: string) => setContactLinks((current) => current.map((link) => link.id === id ? { ...link, [field]: nextValue } : link));
 
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,9 +47,14 @@ export function AdminSettingsPage() {
         tagline: value('tagline'), taglineZh: value('taglineZh'),
         bio: value('bio'), bioZh: value('bioZh'),
         email: value('email'),
-        github: value('github'), tradingView: value('tradingView'), linkedIn: value('linkedIn'),
-        discord: value('discord'), instagram: value('instagram'), x: value('x'),
+        contactLinks: contactLinks.map((link) => ({ ...link, label: link.label.trim(), labelZh: link.labelZh?.trim(), url: link.url.trim() })).filter((link) => link.label && link.url),
         availability: value('availability'), availabilityZh: value('availabilityZh'),
+        contactEyebrow: value('contactEyebrow'), contactEyebrowZh: value('contactEyebrowZh'),
+        contactTitle: value('contactTitle'), contactTitleZh: value('contactTitleZh'),
+        contactBody: value('contactBody'), contactBodyZh: value('contactBodyZh'),
+        projectTypeOptions: projectTypeOptions.map((item) => ({ ...item, label: item.label.trim(), labelZh: item.labelZh?.trim() })).filter((item) => item.label),
+        budgetOptions: budgetOptions.map((item) => ({ ...item, label: item.label.trim(), labelZh: item.labelZh?.trim() })).filter((item) => item.label),
+        timelineOptions: timelineOptions.map((item) => ({ ...item, label: item.label.trim(), labelZh: item.labelZh?.trim() })).filter((item) => item.label),
         showHeader: f.has('showHeader'), showHero: f.has('showHero'), showAbout: f.has('showAbout'), showFinalCta: f.has('showFinalCta'),
         navHome: value('navHome'), navHomeZh: value('navHomeZh'),
         navProjects: value('navProjects'), navProjectsZh: value('navProjectsZh'),
@@ -139,13 +168,35 @@ export function AdminSettingsPage() {
         </fieldset>
 
         <fieldset className="settings-section">
-          <legend>{zh ? '聯絡與其他設定' : 'CONTACT & OTHER SETTINGS'}</legend>
-          <label>Email<input name="email" type="email" defaultValue={siteConfig.email}/></label>
+          <legend>{zh ? '聯絡頁文字' : 'CONTACT PAGE COPY'}</legend>
           <div className="form-two">
-            <label>GitHub<input name="github" defaultValue={siteConfig.github}/></label><label>TradingView<input name="tradingView" defaultValue={siteConfig.tradingView}/></label>
-            <label>LinkedIn<input name="linkedIn" defaultValue={siteConfig.linkedIn}/></label><label>Discord<input name="discord" defaultValue={siteConfig.discord}/></label>
-            <label>Instagram<input name="instagram" defaultValue={siteConfig.instagram}/></label><label>X<input name="x" defaultValue={siteConfig.x}/></label>
+            <label>Eyebrow (English)<input name="contactEyebrow" defaultValue={siteConfig.contactEyebrow}/></label><label>小標（繁中）<input name="contactEyebrowZh" defaultValue={siteConfig.contactEyebrowZh}/></label>
+            <label>Title (English)<textarea name="contactTitle" rows={4} defaultValue={siteConfig.contactTitle}/></label><label>標題（繁中）<textarea name="contactTitleZh" rows={4} defaultValue={siteConfig.contactTitleZh}/></label>
+            <label>Introduction (English)<textarea name="contactBody" rows={5} defaultValue={siteConfig.contactBody}/></label><label>介紹（繁中）<textarea name="contactBodyZh" rows={5} defaultValue={siteConfig.contactBodyZh}/></label>
             <label>Availability (English)<textarea name="availability" rows={3} defaultValue={siteConfig.availability}/></label><label>合作狀態（繁中）<textarea name="availabilityZh" rows={3} defaultValue={siteConfig.availabilityZh}/></label>
+          </div>
+        </fieldset>
+
+        <fieldset className="settings-section">
+          <legend>{zh ? '詢價表單下拉選單' : 'INQUIRY DROPDOWN OPTIONS'}</legend>
+          <p className="field-help">{zh ? '每個選項都可以新增、刪除，並分別設定中英文內容。' : 'Add, remove, and edit every option in English and Chinese.'}</p>
+          <OptionEditor title={zh ? '專案類型' : 'Project types'} options={projectTypeOptions} setOptions={setProjectTypeOptions} zh={zh}/>
+          <OptionEditor title={zh ? '預算範圍' : 'Budget ranges'} options={budgetOptions} setOptions={setBudgetOptions} zh={zh}/>
+          <OptionEditor title={zh ? '時程' : 'Timelines'} options={timelineOptions} setOptions={setTimelineOptions} zh={zh}/>
+        </fieldset>
+
+        <fieldset className="settings-section">
+          <legend>{zh ? '聯絡連結與 Email' : 'CONTACT LINKS & EMAIL'}</legend>
+          <label>Email<input name="email" type="email" defaultValue={siteConfig.email}/></label>
+          <div className="contact-links-editor">
+            <div className="contact-links-heading"><div><b>{zh ? '自訂聯絡連結' : 'Custom contact links'}</b><small>{zh ? '可自由新增、刪除、改名稱與網址。' : 'Add, remove, rename, and update each URL.'}</small></div><button type="button" className="button secondary small" onClick={() => setContactLinks((current) => [...current, { id: `link-${Date.now()}-${current.length}`, label: '', labelZh: '', url: '' }])}><Plus size={15}/>{zh ? '新增連結' : 'Add link'}</button></div>
+            {contactLinks.length === 0 && <p className="empty-links">{zh ? '目前沒有連結，按「新增連結」建立第一個。' : 'No links yet. Add your first link.'}</p>}
+            {contactLinks.map((link, index) => <div className="contact-link-row" key={link.id}>
+              <label>{zh ? '英文名稱' : 'English label'}<input value={link.label} onChange={(e) => updateContactLink(link.id, 'label', e.target.value)} placeholder="GitHub"/></label>
+              <label>{zh ? '中文名稱' : 'Chinese label'}<input value={link.labelZh || ''} onChange={(e) => updateContactLink(link.id, 'labelZh', e.target.value)} placeholder="GitHub"/></label>
+              <label>{zh ? '網址' : 'URL'}<input type="url" value={link.url} onChange={(e) => updateContactLink(link.id, 'url', e.target.value)} placeholder="https://..."/></label>
+              <button type="button" className="icon-button danger-outline" onClick={() => setContactLinks((current) => current.filter((item) => item.id !== link.id))} aria-label={`${zh ? '刪除' : 'Remove'} ${link.label || index + 1}`}><Trash2 size={17}/></button>
+            </div>)}
           </div>
         </fieldset>
 
