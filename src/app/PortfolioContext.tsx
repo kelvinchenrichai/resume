@@ -14,6 +14,7 @@ type ContextValue = {
   saveProject(p: ProjectItem): Promise<void>;
   deleteProject(id: string): Promise<void>;
   duplicateProject(p: ProjectItem): Promise<void>;
+  reorderFeatured(ids: string[]): Promise<void>;
   saveInquiry(i: InquiryItem): Promise<void>;
   deleteInquiry(id: string): Promise<void>;
   saveGallery(item: GalleryItem | null, file: File | null, values: Record<string, string | boolean | number>): Promise<void>;
@@ -76,6 +77,11 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   };
   const deleteProject = async (id: string) => { await cloudApi.deleteProject(id); setProjects((current) => current.filter((p) => p.id !== id)); };
   const duplicateProject = async (p: ProjectItem) => saveProject({ ...p, id: `proj-${Date.now()}`, slug: `${p.slug || slugify(p.title)}-copy-${Date.now()}`, title: `${p.title} (Copy)`, isPublic: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  const reorderFeatured = async (ids: string[]) => {
+    await cloudApi.saveFeaturedOrder(ids);
+    const order = new Map(ids.map((id, index) => [id, index + 1]));
+    setProjects((current) => current.map((project) => order.has(project.id) ? { ...project, featuredOrder: order.get(project.id) } : project));
+  };
   const saveInquiry = async (item: InquiryItem) => {
     const exists = inquiries.some((i) => i.id === item.id);
     if (isAdmin() && exists) await cloudApi.saveInquiry(item); else await cloudApi.createInquiry(item);
@@ -118,7 +124,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setSiteConfig(next.siteConfig);
   };
 
-  return <Context.Provider value={{ projects, inquiries, gallery, siteConfig, ready, error, saveProject, deleteProject, duplicateProject, saveInquiry, deleteInquiry, saveGallery, deleteGallery, saveSiteConfig, importBackup, exportBackup, resetDemo }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ projects, inquiries, gallery, siteConfig, ready, error, saveProject, deleteProject, duplicateProject, reorderFeatured, saveInquiry, deleteInquiry, saveGallery, deleteGallery, saveSiteConfig, importBackup, exportBackup, resetDemo }}>{children}</Context.Provider>;
 }
 
 export function usePortfolio() {
