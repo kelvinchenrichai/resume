@@ -19,6 +19,7 @@ export const cloudApi = {
   getAdminState: () => request<PortfolioState>('/aadmin-ck/api/state'),
   createInquiry: (item: InquiryItem) => request<{ ok: true }>('/api/public/inquiries', { method: 'POST', body: JSON.stringify(item) }),
   saveProject: (item: ProjectItem, exists: boolean) => request<{ ok: true }>(exists ? `/aadmin-ck/api/projects/${encodeURIComponent(item.id)}` : '/aadmin-ck/api/projects', { method: exists ? 'PUT' : 'POST', body: JSON.stringify(item) }),
+  saveFeaturedOrder: (ids: string[]) => request<{ ok: true }>('/aadmin-ck/api/projects/featured-order', { method: 'PUT', body: JSON.stringify({ ids }) }),
   uploadProjectImage: (file: File) => {
     const form = new FormData();
     form.set('image', file);
