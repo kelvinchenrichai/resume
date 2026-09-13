@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { AdminGalleryPage } from './admin/AdminGalleryPage';
+import { AdminFeaturedOrderPage } from './admin/AdminFeaturedOrderPage';
 import { AdminInquiriesPage } from './admin/AdminInquiriesPage';
 import { AdminLayout } from './admin/AdminLayout';
 import { AdminProjectsPage } from './admin/AdminProjectsPage';
@@ -27,6 +28,7 @@ export default function App() {
     <Route path="/aadmin-ck" element={<AdminLayout/>}>
       <Route index element={<AdminDashboard/>}/>
       <Route path="projects" element={<AdminProjectsPage/>}/>
+      <Route path="featured" element={<AdminFeaturedOrderPage/>}/>
       <Route path="gallery" element={<AdminGalleryPage/>}/>
       <Route path="inquiries" element={<AdminInquiriesPage/>}/>
       <Route path="settings" element={<AdminSettingsPage/>}/>
