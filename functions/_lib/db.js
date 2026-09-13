@@ -1,4 +1,18 @@
-const DEFAULT_CONFIG = { name: 'CK', tagline: 'Trading × AI × Systems × Experiments', taglineZh: '交易 × AI × 系統 × 實驗', bio: 'I build tools, systems and experiments around trading, AI and decision-making.', bioZh: '我專注打造與交易、AI 和決策有關的工具、系統與實驗。', email: 'hello@example.com', github: 'https://github.com/', tradingView: 'https://www.tradingview.com/', availability: 'Open to focused collaborations and ambitious prototypes.', availabilityZh: '目前開放目標明確的合作與具企圖心的原型專案。' };
+const DEFAULT_CONFIG = {
+  name: 'CK', tagline: 'Trading × AI ×\nSystems × Experiments', taglineZh: '交易 × AI ×\n系統 × 實驗',
+  bio: 'I build tools, systems and experiments around trading, AI and decision-making.', bioZh: '我專注打造與交易、AI 和決策有關的工具、系統與實驗。',
+  email: 'hello@example.com', github: 'https://github.com/', tradingView: 'https://www.tradingview.com/',
+  availability: 'Open to focused collaborations and ambitious prototypes.', availabilityZh: '目前開放目標明確的合作與具企圖心的原型專案。',
+  showHeader: true, showHero: true, showAbout: true, showFinalCta: true,
+  navHome: 'Home', navHomeZh: '首頁', navProjects: 'Projects', navProjectsZh: '作品',
+  navGallery: 'Certificates / Gallery', navGalleryZh: '證照／相簿', navContact: 'Contact', navContactZh: '聯絡', navCta: 'Work With Me', navCtaZh: '與我合作',
+  heroEyebrow: 'INDEPENDENT BUILDER', heroEyebrowZh: '獨立創作者', heroPrimaryLabel: 'View My Work', heroPrimaryLabelZh: '瀏覽作品', heroSecondaryLabel: 'Work With Me', heroSecondaryLabelZh: '與我合作',
+  aboutEyebrow: 'ABOUT', aboutEyebrowZh: '關於我', aboutTitle: 'I turn curiosity into useful systems.', aboutTitleZh: '把好奇心轉化成真正有用的系統。',
+  aboutBody: 'Part trader, part builder, always experimenting. My work sits between quantitative research, AI-native workflows and rapid product prototyping.', aboutBodyZh: '我是交易者，也是創作者，持續透過實驗學習。我的工作橫跨量化研究、AI 原生工作流程與快速產品原型。',
+  aboutTags: 'Trader\nBuilder\nAI-native Experimenter\nSystem Thinker\nRapid Prototyper\nQuant / Trading Research', aboutTagsZh: '交易者\n創作者\nAI 原生實驗者\n系統思考者\n快速原型實作者\n量化／交易研究',
+  ctaEyebrow: 'HAVE AN IDEA?', ctaEyebrowZh: '有想法嗎？', ctaTitle: "Let's make it concrete.", ctaTitleZh: '一起把想法做成作品。',
+  ctaBody: 'TradingView indicator · Trading / Quant tool · AI agent · Automation · Website · Dashboard · Prototype', ctaBodyZh: 'TradingView 指標 · 交易／量化工具 · AI Agent · 自動化 · 網站 · 儀表板 · 產品原型', ctaButtonLabel: 'Discuss a Project', ctaButtonLabelZh: '討論專案',
+};
 
 const DEFAULT_PROJECTS = [
   { id: 'proj-1', slug: 'market-structure-lab', title: 'Market Structure Lab', titleZh: '市場結構研究室', coverImage: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1600&auto=format&fit=crop', shortDescription: 'A research dashboard for testing market structure, momentum and risk hypotheses.', shortDescriptionZh: '用來驗證市場結構、動能與風險假設的研究儀表板。', detailedDescription: 'An experimental workspace that turns raw market data into repeatable research. It combines regime filters, trade journaling and visual validation so an idea can move from observation to a testable system.', detailedDescriptionZh: '把原始市場資料轉化為可重複研究流程的實驗工作區。結合市場狀態篩選、交易紀錄與視覺驗證，讓一個觀察能逐步變成可測試的系統。', category: 'Trading / Quant', categoryZh: '交易／量化', tags: ['TradingView', 'Research', 'TypeScript'], year: 2026, status: 'In progress', statusZh: '進行中', demoUrl: 'https://example.com', githubUrl: 'https://github.com', isFeatured: true, isPublic: true, displayOrder: 1, createdAt: '2026-01-10T08:00:00Z', updatedAt: '2026-08-20T08:00:00Z' },
@@ -76,7 +90,15 @@ export async function publicState(db) {
   const gallery = await db.prepare('SELECT data FROM gallery WHERE is_public = 1 ORDER BY display_order ASC').all();
   const config = await db.prepare('SELECT data FROM site_config WHERE id = 1').first();
   const storedConfig = JSON.parse(config.data);
-  const siteConfig = { name: storedConfig.name, tagline: storedConfig.tagline, taglineZh: storedConfig.taglineZh, bio: storedConfig.bio, bioZh: storedConfig.bioZh, email: '', availability: storedConfig.availability, availabilityZh: storedConfig.availabilityZh };
+  const publicConfigKeys = [
+    'name', 'tagline', 'taglineZh', 'bio', 'bioZh', 'availability', 'availabilityZh',
+    'showHeader', 'showHero', 'showAbout', 'showFinalCta',
+    'navHome', 'navHomeZh', 'navProjects', 'navProjectsZh', 'navGallery', 'navGalleryZh', 'navContact', 'navContactZh', 'navCta', 'navCtaZh',
+    'heroEyebrow', 'heroEyebrowZh', 'heroPrimaryLabel', 'heroPrimaryLabelZh', 'heroSecondaryLabel', 'heroSecondaryLabelZh',
+    'aboutEyebrow', 'aboutEyebrowZh', 'aboutTitle', 'aboutTitleZh', 'aboutBody', 'aboutBodyZh', 'aboutTags', 'aboutTagsZh',
+    'ctaEyebrow', 'ctaEyebrowZh', 'ctaTitle', 'ctaTitleZh', 'ctaBody', 'ctaBodyZh', 'ctaButtonLabel', 'ctaButtonLabelZh',
+  ];
+  const siteConfig = { ...Object.fromEntries(publicConfigKeys.map((key) => [key, storedConfig[key] ?? DEFAULT_CONFIG[key]])), email: '' };
   return { projects: projects.results.map((row) => JSON.parse(row.data)), gallery: gallery.results.map((row) => withGalleryImage(row, false)), siteConfig };
 }
 
