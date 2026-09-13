@@ -47,13 +47,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           setProjects(state.projects);
           setInquiries(state.inquiries);
           setGallery(state.gallery);
-          setSiteConfig(state.siteConfig);
+          setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...state.siteConfig });
         } else {
           const state = await cloudApi.getPublicState();
           if (!active) return;
           setProjects(state.projects);
           setGallery(state.gallery);
-          setSiteConfig(state.siteConfig);
+          setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...state.siteConfig });
         }
         setError('');
       } catch (err) {
@@ -109,7 +109,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     if (!data || typeof data !== 'object') throw new Error('Invalid backup file.');
     const backup = data as { projects?: ProjectItem[]; inquiries?: InquiryItem[]; gallery?: GalleryItem[]; siteConfig?: SiteConfig };
     if (!Array.isArray(backup.projects)) throw new Error('Backup has no projects array.');
-    const next = { projects: backup.projects, inquiries: backup.inquiries || [], gallery: backup.gallery, siteConfig: backup.siteConfig || DEFAULT_SITE_CONFIG };
+    const next = { projects: backup.projects, inquiries: backup.inquiries || [], gallery: backup.gallery, siteConfig: { ...DEFAULT_SITE_CONFIG, ...(backup.siteConfig || {}) } };
     await cloudApi.importState(next);
     setProjects(next.projects);
     setInquiries(next.inquiries);
