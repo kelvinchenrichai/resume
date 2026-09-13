@@ -2,7 +2,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from 'react
 import { DEFAULT_SITE_CONFIG } from '../config/siteConfig';
 import { INITIAL_PROJECTS } from '../data/initialProjects';
 import { cloudApi } from '../services/cloudApi';
-import { GalleryItem, InquiryItem, ProjectItem, SiteConfig } from '../types';
+import { ContactLink, GalleryItem, InquiryItem, ProjectItem, SiteConfig } from '../types';
 
 type ContextValue = {
   projects: ProjectItem[];
@@ -28,6 +28,16 @@ type ContextValue = {
 const Context = createContext<ContextValue | null>(null);
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const isAdmin = () => window.location.pathname.startsWith('/aadmin-ck');
+const legacyContactLinks = (config: Partial<SiteConfig>): ContactLink[] => [
+  ['github', 'GitHub', config.github], ['tradingview', 'TradingView', config.tradingView],
+  ['linkedin', 'LinkedIn', config.linkedIn], ['discord', 'Discord', config.discord],
+  ['instagram', 'Instagram', config.instagram], ['x', 'X', config.x],
+].filter((item): item is [string, string, string] => Boolean(item[2])).map(([id, label, url]) => ({ id, label, labelZh: label, url }));
+const normalizeSiteConfig = (config: Partial<SiteConfig> = {}): SiteConfig => ({
+  ...DEFAULT_SITE_CONFIG,
+  ...config,
+  contactLinks: Array.isArray(config.contactLinks) ? config.contactLinks : legacyContactLinks(config),
+});
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<ProjectItem[]>([]);
@@ -47,13 +57,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           setProjects(state.projects);
           setInquiries(state.inquiries);
           setGallery(state.gallery);
-          setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...state.siteConfig });
+          setSiteConfig(normalizeSiteConfig(state.siteConfig));
         } else {
           const state = await cloudApi.getPublicState();
           if (!active) return;
           setProjects(state.projects);
           setGallery(state.gallery);
-          setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...state.siteConfig });
+          setSiteConfig(normalizeSiteConfig(state.siteConfig));
         }
         setError('');
       } catch (err) {
@@ -96,7 +106,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setGallery((current) => existing ? current.map((entry) => entry.id === item.id ? item : entry) : [item, ...current]);
   };
   const deleteGallery = async (id: string) => { await cloudApi.deleteGallery(id); setGallery((current) => current.filter((item) => item.id !== id)); };
-  const saveSiteConfig = async (config: SiteConfig) => { await cloudApi.saveSiteConfig(config); setSiteConfig(config); };
+  const saveSiteConfig = async (config: SiteConfig) => { const next = normalizeSiteConfig(config); await cloudApi.saveSiteConfig(next); setSiteConfig(next); };
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify({ version: 4, projects, inquiries, gallery, siteConfig }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -109,7 +119,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     if (!data || typeof data !== 'object') throw new Error('Invalid backup file.');
     const backup = data as { projects?: ProjectItem[]; inquiries?: InquiryItem[]; gallery?: GalleryItem[]; siteConfig?: SiteConfig };
     if (!Array.isArray(backup.projects)) throw new Error('Backup has no projects array.');
-    const next = { projects: backup.projects, inquiries: backup.inquiries || [], gallery: backup.gallery, siteConfig: { ...DEFAULT_SITE_CONFIG, ...(backup.siteConfig || {}) } };
+    const next = { projects: backup.projects, inquiries: backup.inquiries || [], gallery: backup.gallery, siteConfig: normalizeSiteConfig(backup.siteConfig) };
     await cloudApi.importState(next);
     setProjects(next.projects);
     setInquiries(next.inquiries);
